@@ -187,3 +187,53 @@ func TestPullCorruptFile(t *testing.T) {
 		t.Fatal("pull on corrupt file should error")
 	}
 }
+
+// Push writes via a temp file then renames, so a successful save leaves
+// exactly the final file and no leftover temp files.
+func TestPushLeavesNoTempFiles(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("example")
+	if err := p.Push(testConfig{Name: "grant"}); err != nil {
+		t.Fatal(err)
+	}
+
+	expectDir := filepath.Join(dir, "expect")
+	entries, err := os.ReadDir(expectDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected exactly one file, got %d: %v", len(entries), entries)
+	}
+	if entries[0].Name() != "example.expect.json" {
+		t.Fatalf("unexpected file name: %s", entries[0].Name())
+	}
+}
+
+// A failed rename still cleans up the temp file and returns the error.
+func TestPushFailedRenameCleansUp(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("example")
+	// Block the rename by making the target path a directory.
+	target := filepath.Join(dir, "expect", "example.expect.json")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := p.Push(testConfig{Name: "grant"}); err == nil {
+		t.Fatal("push over an existing directory should error")
+	}
+
+	expectDir := filepath.Join(dir, "expect")
+	entries, err := os.ReadDir(expectDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != filepath.Base(target) {
+		t.Fatalf("expected only the blocking directory, got %v", entries)
+	}
+}
