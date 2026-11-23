@@ -56,8 +56,8 @@ func main() {
 
 ## API
 
-Values are stored as JSON in `os.UserConfigDir()` in a file named
-`<name>.expect.json`.
+Values are stored as JSON in the `expect` subdirectory of
+`os.UserConfigDir()` in a file named `<name>.expect.json`.
 
 ### `persist.Expect[T any](name string, defaults ...T) *Persist[T]`
 

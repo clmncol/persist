@@ -7,15 +7,16 @@ import (
 )
 
 // Persist is a generic, file-backed persistent config value.
-// Values are stored as JSON in os.UserConfigDir() in a file named
-// "<name>.expect.json".
+// Values are stored as JSON in the "expect" subdirectory of
+// os.UserConfigDir() in a file named "<name>.expect.json".
 type Persist[T any] struct {
 	Name  string
 	Value T
 }
 
 // Expect establishes a new persist handle for the given config name.
-// The file "<name>.expect.json" is created in os.UserConfigDir() on Push.
+// The file "<name>.expect.json" is created in the "expect" subdirectory
+// of os.UserConfigDir() on Push.
 // If a default is provided, it is the value returned by Pull/Pop when
 // no file exists yet.
 func Expect[T any](name string, defaults ...T) *Persist[T] {
@@ -74,7 +75,7 @@ func (p *Persist[T]) path() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, p.Name+".expect.json"), nil
+	return filepath.Join(dir, "expect", p.Name+".expect.json"), nil
 }
 
 func (p *Persist[T]) write() error {

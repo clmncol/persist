@@ -3,6 +3,7 @@ package persist
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -149,6 +150,9 @@ func TestPullCorruptFile(t *testing.T) {
 	p := Expect[testConfig]("corrupt")
 	path, err := p.path()
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, []byte("not json"), 0o644); err != nil {
