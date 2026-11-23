@@ -11,7 +11,7 @@ type testConfig struct {
 	Name string `json:"name"`
 }
 
-func TestPushPullPop(t *testing.T) {
+func TestPushPull(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
 
@@ -29,12 +29,8 @@ func TestPushPullPop(t *testing.T) {
 		t.Fatalf("pull: got %+v want name=%q", got, "grant")
 	}
 
-	got, err = p.Pop()
-	if err != nil {
+	if err := p.Push(testConfig{Name: ""}); err != nil {
 		t.Fatal(err)
-	}
-	if got.Name != "grant" {
-		t.Fatalf("pop: got %+v want name=%q", got, "grant")
 	}
 
 	after, err := p.Pull()
@@ -42,7 +38,7 @@ func TestPushPullPop(t *testing.T) {
 		t.Fatal(err)
 	}
 	if after.Name != "" {
-		t.Fatalf("pop should reset file to zero value, got %+v", after)
+		t.Fatalf("push with zero value: got %+v", after)
 	}
 }
 
@@ -87,30 +83,6 @@ func TestPullMissingFile(t *testing.T) {
 	}
 	if got.Name != "" {
 		t.Fatalf("pull on missing file: got %+v want zero value", got)
-	}
-}
-
-// Pop on a missing file returns the zero value and creates the file.
-func TestPopMissingFile(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", dir)
-
-	p := Expect[testConfig]("absent")
-
-	got, err := p.Pop()
-	if err != nil {
-		t.Fatalf("pop on missing file should not error: %v", err)
-	}
-	if got.Name != "" {
-		t.Fatalf("pop on missing file: got %+v want zero value", got)
-	}
-
-	path, err := p.path()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Fatalf("pop should have created the file at %s", path)
 	}
 }
 

@@ -17,7 +17,7 @@ type Persist[T any] struct {
 // Expect establishes a new persist handle for the given config name.
 // The file "<name>.expect.json" is created in the "expect" subdirectory
 // of os.UserConfigDir() on Push.
-// If a default is provided, it is the value returned by Pull/Pop when
+// If a default is provided, it is the value returned by Pull when
 // no file exists yet.
 func Expect[T any](name string, defaults ...T) *Persist[T] {
 	p := &Persist[T]{Name: name}
@@ -50,23 +50,6 @@ func (p *Persist[T]) Pull() (T, error) {
 		return v, err
 	}
 	p.Value = v
-	return v, nil
-}
-
-// Pop returns the value stored in the persist file and then resets the file
-// to the zero value of T, effectively clearing the persisted value.
-// If the file does not exist, Pop returns the default value (or the zero
-// value of T if none was given to Expect) and writes it to disk.
-func (p *Persist[T]) Pop() (T, error) {
-	v, err := p.Pull()
-	if err != nil {
-		return v, err
-	}
-	var zero T
-	p.Value = zero
-	if err := p.write(); err != nil {
-		return v, err
-	}
 	return v, nil
 }
 
