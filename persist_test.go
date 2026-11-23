@@ -114,6 +114,21 @@ func TestExpectDefault(t *testing.T) {
 	}
 }
 
+// A name containing a path separator is rejected by Pull and Push.
+func TestNameWithPathSeparator(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	for _, name := range []string{"bad/name", `bad\name`} {
+		p := Expect[testConfig](name)
+		if _, err := p.Pull(); err == nil {
+			t.Errorf("Pull with name %q should error", name)
+		}
+		if err := p.Push(testConfig{Name: "grant"}); err == nil {
+			t.Errorf("Push with name %q should error", name)
+		}
+	}
+}
+
 // A corrupt file should still error on Pull.
 func TestPullCorruptFile(t *testing.T) {
 	dir := t.TempDir()

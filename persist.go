@@ -2,8 +2,10 @@ package persist
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Persist is a generic, file-backed persistent config value.
@@ -17,6 +19,8 @@ type Persist[T any] struct {
 // Expect establishes a new persist handle for the given config name.
 // The file "<name>.expect.json" is created in the "expect" subdirectory
 // of os.UserConfigDir() on Push.
+// The name must not contain path separators; Pull and Push will
+// return an error if it does.
 // If a default is provided, it is the value returned by Pull when
 // no file exists yet.
 func Expect[T any](name string, defaults ...T) *Persist[T] {
@@ -54,6 +58,9 @@ func (p *Persist[T]) Pull() (T, error) {
 }
 
 func (p *Persist[T]) path() (string, error) {
+	if strings.ContainsAny(p.Name, "/\\") {
+		return "", fmt.Errorf("persist %q: name must not contain path separators", p.Name)
+	}
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err

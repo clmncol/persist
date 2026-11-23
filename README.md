@@ -55,7 +55,8 @@ Values are stored as JSON in the `expect` subdirectory of
 ### `persist.Expect[T any](name string, defaults ...T) *Persist[T]`
 
 Establishes a new persist handle for the given config name. The file is
-created lazily on `Push`.
+created lazily on `Push`. The name must not contain path separators
+(`/` or `\`); otherwise `Pull` and `Push` return an error.
 
 If a default is provided, it is returned by `Pull` when no file exists
 yet — handy for first-run behavior.
