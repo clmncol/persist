@@ -6,6 +6,34 @@ Save one Go value as JSON between runs. Use it for CLI preferences, like remembe
 go get github.com/clmncol/persist
 ```
 
+For a full config:
+```go
+package main
+
+import "github.com/clmncol/persist"
+
+type Config struct {
+	Profile string `json:"profile"`
+	Verbose bool   `json:"verbose"`
+}
+
+func main() {
+	store := persist.Expect("mycli-config", Config{Profile: "default"})
+
+	cfg, err := store.Pull()
+	if err != nil {
+		panic(err)
+	}
+
+	// Change one preference without losing the others.
+	cfg.Profile = "work"
+	if err := store.Push(cfg); err != nil {
+		panic(err)
+	}
+}
+```
+
+Or a single value:
 ```go
 import "github.com/clmncol/persist"
 
