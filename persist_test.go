@@ -72,3 +72,62 @@ func TestPushWritesJSON(t *testing.T) {
 		t.Fatalf("file contents: got %+v", got)
 	}
 }
+
+// Pull on a missing file returns the zero value and no error.
+func TestPullMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("absent")
+
+	got, err := p.Pull()
+	if err != nil {
+		t.Fatalf("pull on missing file should not error: %v", err)
+	}
+	if got.Name != "" {
+		t.Fatalf("pull on missing file: got %+v want zero value", got)
+	}
+}
+
+// Pop on a missing file returns the zero value and creates the file.
+func TestPopMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("absent")
+
+	got, err := p.Pop()
+	if err != nil {
+		t.Fatalf("pop on missing file should not error: %v", err)
+	}
+	if got.Name != "" {
+		t.Fatalf("pop on missing file: got %+v want zero value", got)
+	}
+
+	path, err := p.path()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Fatalf("pop should have created the file at %s", path)
+	}
+}
+
+// A corrupt file should still error on Pull.
+func TestPullCorruptFile(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("corrupt")
+	path, err := p.path()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := p.Pull(); err == nil {
+		t.Fatal("pull on corrupt file should error")
+	}
+}

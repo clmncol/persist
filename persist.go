@@ -30,12 +30,17 @@ func (p *Persist[T]) Push(v T) error {
 }
 
 // Pull returns the value stored in the persist file.
+// If the file does not exist yet, Pull returns the zero value of T
+// with no error — first-run is not a failure condition.
 // The file itself is left untouched.
 func (p *Persist[T]) Pull() (T, error) {
 	var v T
 	path, err := p.path()
 	if err != nil {
 		return v, err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return v, nil
 	}
 	if err := readFile(path, &v); err != nil {
 		return v, err
@@ -46,6 +51,8 @@ func (p *Persist[T]) Pull() (T, error) {
 
 // Pop returns the value stored in the persist file and then resets the file
 // to the zero value of T, effectively clearing the persisted value.
+// If the file does not exist, Pop returns the zero value and writes it
+// to disk (creating the file).
 func (p *Persist[T]) Pop() (T, error) {
 	v, err := p.Pull()
 	if err != nil {
