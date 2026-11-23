@@ -113,6 +113,34 @@ func TestPopMissingFile(t *testing.T) {
 	}
 }
 
+// Expect with a default returns the default when the file is missing.
+func TestExpectDefault(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("example", testConfig{Name: "default"})
+
+	got, err := p.Pull()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "default" {
+		t.Fatalf("pull with default: got %+v want name=%q", got, "default")
+	}
+
+	if err := p.Push(testConfig{Name: "grant"}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err = p.Pull()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "grant" {
+		t.Fatalf("pull after push: got %+v want name=%q", got, "grant")
+	}
+}
+
 // A corrupt file should still error on Pull.
 func TestPullCorruptFile(t *testing.T) {
 	dir := t.TempDir()

@@ -16,11 +16,14 @@ type Persist[T any] struct {
 
 // Expect establishes a new persist handle for the given config name.
 // The file "<name>.expect.json" is created in os.UserConfigDir() on Push.
-func Expect[T any](name string) *Persist[T] {
-	return &Persist[T]{
-		Name:  name,
-		Value: *new(T),
+// If a default is provided, it is the value returned by Pull/Pop when
+// no file exists yet.
+func Expect[T any](name string, defaults ...T) *Persist[T] {
+	p := &Persist[T]{Name: name}
+	if len(defaults) > 0 {
+		p.Value = defaults[0]
 	}
+	return p
 }
 
 // Push overwrites the persist file with v.
@@ -30,8 +33,8 @@ func (p *Persist[T]) Push(v T) error {
 }
 
 // Pull returns the value stored in the persist file.
-// If the file does not exist yet, Pull returns the zero value of T
-// with no error — first-run is not a failure condition.
+// If the file does not exist yet, Pull returns the default value
+// (or the zero value of T if none was given to Expect) with no error.
 // The file itself is left untouched.
 func (p *Persist[T]) Pull() (T, error) {
 	var v T
@@ -40,7 +43,7 @@ func (p *Persist[T]) Pull() (T, error) {
 		return v, err
 	}
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return v, nil
+		return p.Value, nil
 	}
 	if err := readFile(path, &v); err != nil {
 		return v, err
@@ -51,8 +54,8 @@ func (p *Persist[T]) Pull() (T, error) {
 
 // Pop returns the value stored in the persist file and then resets the file
 // to the zero value of T, effectively clearing the persisted value.
-// If the file does not exist, Pop returns the zero value and writes it
-// to disk (creating the file).
+// If the file does not exist, Pop returns the default value (or the zero
+// value of T if none was given to Expect) and writes it to disk.
 func (p *Persist[T]) Pop() (T, error) {
 	v, err := p.Pull()
 	if err != nil {
