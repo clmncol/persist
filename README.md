@@ -1,86 +1,24 @@
 # Persist
 
-_simple, uncomplicated persistent configs in go_
-
-A tiny library for saving a single value to a JSON file in the user's config
-directory. Import it with an expected config shape, then `Push` or `Pull` a
-single value for it.
-
-A basic requirement of many apps where viper is too complicated, but it's a
-repeated enough pattern to need a lib.
-
-## Installation
+Save one Go value as JSON between runs. Use it for CLI preferences, like remembering the last selected profile.
 
 ```sh
 go get github.com/clmncol/persist
 ```
 
-## Usage
-
 ```go
-package main
+import "github.com/clmncol/persist"
 
-import (
-	"fmt"
-
-	"github.com/clmncol/persist"
-)
-
-type Config struct {
-	Name string `json:"name"`
+// Inside your command:
+p := persist.Expect[string]("mycli-profile", "default")
+profile, err := p.Pull()
+if err != nil {
+	panic(err)
 }
-
-func main() {
-	p := persist.Expect[Config]("example")
-
-	// Overwrites the file with this value.
-	if err := p.Push(Config{Name: "grant"}); err != nil {
-		panic(err)
-	}
-
-	// Reads the file back. The file is left untouched.
-	cfg, err := p.Pull()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(cfg)
+// Use profile, then save the new selection.
+if err := p.Push("work"); err != nil {
+	panic(err)
 }
 ```
 
-## API
-
-Values are stored as JSON in the `expect` subdirectory of
-`os.UserConfigDir()` in a file named `<name>.expect.json`.
-
-### `persist.Expect[T any](name string, defaults ...T) *Persist[T]`
-
-Establishes a new persist handle for the given config name. The file is
-created lazily on `Push`. The name must not contain path separators
-(`/` or `\`); otherwise `Pull` and `Push` return an error.
-
-If a default is provided, it is returned by `Pull` when no file exists
-yet — handy for first-run behavior.
-
-```go
-p := persist.Expect[Config]("example", Config{Name: "default"})
-```
-
-### `(*Persist[T]).Push(v T) error`
-
-Overwrites the persist file with `v`.
-
-### `(*Persist[T]).Pull() (T, error)`
-
-Returns the value stored in the persist file. The file itself is left
-untouched. If the file does not exist yet, returns the default (or the zero
-value of `T`) with no error.
-
-
-
-## Design notes
-
-- **No locking.** Persist does not guarantee exclusive read/write access; it
-  is not a replacement for a file-locking store. Viper doesn't guarantee it
-  either.
-- **JSON** is the only encoding. It's stdlib, human-readable, and
-  cross-language — the opposite of "viper is too complicated."
+`Pull` returns the supplied default (or the type’s zero value) if the file is missing. `Push` replaces `expect/<name>.expect.json` under `os.UserConfigDir()` via a temp file and rename. Names can’t contain `/` or `\`. No locking.
