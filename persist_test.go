@@ -114,6 +114,43 @@ func TestExpectDefault(t *testing.T) {
 	}
 }
 
+// Deleting the file after a Push makes Pull return the constructor default
+// again, not the last written value.
+func TestPullReturnsDefaultAfterFileDeleted(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	p := Expect[testConfig]("example", testConfig{Name: "default"})
+
+	if err := p.Push(testConfig{Name: "grant"}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := p.Pull()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "grant" {
+		t.Fatalf("pull after push: got %+v want name=%q", got, "grant")
+	}
+
+	path, err := p.path()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err = p.Pull()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "default" {
+		t.Fatalf("pull after file deleted: got %+v want name=%q", got, "default")
+	}
+}
+
 // A name containing a path separator is rejected by Pull and Push.
 func TestNameWithPathSeparator(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())

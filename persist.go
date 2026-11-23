@@ -12,8 +12,9 @@ import (
 // Values are stored as JSON in the "expect" subdirectory of
 // os.UserConfigDir() in a file named "<name>.expect.json".
 type Persist[T any] struct {
-	Name  string
-	Value T
+	Name     string
+	Value    T
+	fallback T
 }
 
 // Expect establishes a new persist handle for the given config name.
@@ -21,12 +22,12 @@ type Persist[T any] struct {
 // of os.UserConfigDir() on Push.
 // The name must not contain path separators; Pull and Push will
 // return an error if it does.
-// If a default is provided, it is the value returned by Pull when
+// If a default is provided, it is returned by Pull when
 // no file exists yet.
 func Expect[T any](name string, defaults ...T) *Persist[T] {
 	p := &Persist[T]{Name: name}
 	if len(defaults) > 0 {
-		p.Value = defaults[0]
+		p.fallback = defaults[0]
 	}
 	return p
 }
@@ -48,7 +49,7 @@ func (p *Persist[T]) Pull() (T, error) {
 		return v, err
 	}
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return p.Value, nil
+		return p.fallback, nil
 	}
 	if err := readFile(path, &v); err != nil {
 		return v, err
